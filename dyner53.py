@@ -38,7 +38,8 @@ def init_logging(daemon = False):
         if sys_is_osx_lion():
             syslog_address = '/var/run/syslog'
         else:
-            syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+#            syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+            syslog_address = '/dev/log'
         syslog = logging.handlers.SysLogHandler(address=syslog_address,
                                                 facility='daemon')
         syslog.setFormatter(formatter)
@@ -110,7 +111,7 @@ def update(args):
         logger.warn('updating %s from %s -> %s' % (dyn_domain, rec.resource_records, my_ip))
         zone.update_a(dyn_domain, my_ip, ttl=60)
     else:
-        logger.info("No update needed.")
+        logger.debug("No update needed.")
 
 
 def do_delete(args):
