@@ -9,26 +9,23 @@ and your account is currently hosting a domain on Route 53.
 
 Examples:
 
- dyner53.py --domain example.com --subdomain myhost  check
+    dyner53.py --domain example.com --subdomain myhost  check
 
 This will lookup (using Route53) the current IP address for myhost.example.com, and compare it 
 with the publicly visible IP address of the current host, and report what it finds.  No changes are 
 made.
 
 
-  dyner53.py --domain example.com --subdomain myhost  update
- 
+    dyner53.py --domain example.com --subdomain myhost  update
+
 This will perform the same check as above, and update if needed.  This will create subdomain if it 
 does not already existing.
  
-  dyner53.py --domain example.com --subdomain myhost  --ip 123.123.123.0 update
- 
- 
- Updates the given subdomain (creating if necessary) to the given IP address.  Useful for testing or
- for simple domain management. 
- 
- 
-  dyner53.py --domain example.com --subdomain myhost daemon
+    dyner53.py --domain example.com --subdomain myhost  --ip 123.123.123.0 update
 
-EXPERIMENTAL mode that will run as a daemon (in the background) that will check current public IP every 10 minutes
-and update if needed. 
+Updates the given subdomain (creating if necessary) to the given IP address.  Useful for testing or
+for simple domain management. 
+  
+    dyner53.py --domain example.com --subdomain myhost daemon
+
+EXPERIMENTAL mode that will run as a daemon (in the background) that will check current public IP every 10 minutes and update if needed. 
