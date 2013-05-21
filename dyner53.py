@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
 import boto
-import urllib
+import urllib2
 import argparse
 import logging
 import logging.handlers
 import daemon
 import time
 
-logger = logging.getLogger('dyner53')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 route53 = boto.connect_route53()
 
 
 def sys_is_osx_lion():
     import platform
+
     if platform.platform()[0:6] == 'Darwin':
         (major, minor, patch) = platform.mac_ver()[0].split(".")
         if major == '10' and minor in ['7', '8']:
@@ -22,7 +23,7 @@ def sys_is_osx_lion():
     return False
 
 
-def init_logging(daemon = False):
+def init_logging(daemon=False):
     """
 
     :param daemon:
@@ -34,11 +35,11 @@ def init_logging(daemon = False):
     logger.addHandler(console)
 
     if daemon:
-        # workaround MacPorts bug #37990
+        # TODO: workaround MacPorts bug #37990
         if sys_is_osx_lion():
             syslog_address = '/var/run/syslog'
         else:
-#            syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+        #            syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
             syslog_address = '/dev/log'
         syslog = logging.handlers.SysLogHandler(address=syslog_address,
                                                 facility='daemon')
@@ -72,7 +73,7 @@ def get_args():
 
 
 def get_public_ip():
-    my_ip = urllib.urlopen("http://api.exip.org/?call=ip").read()
+    my_ip = urllib2.urlopen("http://api.exip.org/?call=ip").read()
     return my_ip
 
 
@@ -99,6 +100,7 @@ def do_check(args):
 def do_update(args):
     init_logging()
     update(args)
+
 
 def update(args):
     dyn_domain = get_dyn_domain(args.subdomain, args.domain)
@@ -130,26 +132,37 @@ def do_daemon(args):
 
     :param args:
     """
+    global route53
+    route53.close()
 
     with daemon.DaemonContext():
         init_logging(True)
         run_daemon(args)
 
+
 def run_daemon(args):
-    global route53
-    route53.close()
     logger.warn("Dynamic route53 updater started for: %s" %
                 get_dyn_domain(args.subdomain, args.domain))
     while True:
-        route53 = boto.connect_route53()
-        update(args)
-        route53.close()
         time.sleep(300)
+        try:
+            route53 = boto.connect_route53()
+        except Exception, e:
+            logging.warn('Unable to connect to route53: %s', e)
+            continue
+
+        try:
+            update(args)
+        except Exception, e:
+            logger.warn("Unable to upaate zone: %s", e)
+
+        route53.close()
 
 
 def main():
     args = get_args()
     args.func(args)
+
 
 if __name__ == '__main__':
     main()
