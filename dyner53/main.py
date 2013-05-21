@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import boto
 import urllib2
 import argparse
@@ -7,6 +5,8 @@ import logging
 import logging.handlers
 import daemon
 import time
+
+__author__ = 'rread'
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -158,11 +158,6 @@ def run_daemon(args):
 
         route53.close()
 
-
 def main():
     args = get_args()
     args.func(args)
-
-
-if __name__ == '__main__':
-    main()
