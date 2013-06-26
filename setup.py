@@ -10,11 +10,11 @@ setup(name='dyner53',
       author_email='robertread@gmail.com',
       url='https://github.com/rread/dyner53',
       packages=find_packages(),
-      install_requires=['boto', 'argparse'],
+      install_requires=open('requirements.txt').readlines(),
       license='PSF',
-      entry_points = {
+      entry_points={
           'console_scripts': [
               'dyner53 = dyner53.main:main',
           ]
       },
-     )
+)
