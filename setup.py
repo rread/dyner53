@@ -1,13 +1,20 @@
-__author__ = 'rread'
+__author__ = "rread"
 
-from distutils.core import setup
+from setuptools import setup, find_packages
+import dyner53
 
 setup(name='dyner53',
-      version='1.0',
+      version=dyner53.__version__,
       description='Dynamic Route53 Updater',
       author='Robert Read',
       author_email='robertread@gmail.com',
       url='https://github.com/rread/dyner53',
-      packages=['dyner53'],
-      scripts=['scripts/dyner53'],
+      packages=find_packages(),
+      install_requires=['boto', 'argparse'],
+      license='PSF',
+      entry_points = {
+          'console_scripts': [
+              'dyner53 = dyner53.main:main',
+          ]
+      },
      )
