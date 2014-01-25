@@ -25,6 +25,7 @@ def sys_is_osx_lion():
 
 def init_logging(daemon=False):
     """
+    Initialize logging. 
 
     :param daemon:
     """
@@ -35,11 +36,11 @@ def init_logging(daemon=False):
     logger.addHandler(console)
 
     if daemon:
-        # TODO: workaround MacPorts bug #37990
+        # TODO: workaround MacPorts bug #37990 
         if sys_is_osx_lion():
             syslog_address = '/var/run/syslog'
         else:
-        #            syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+            # syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
             syslog_address = '/dev/log'
         syslog = logging.handlers.SysLogHandler(address=syslog_address,
                                                 facility='daemon')
