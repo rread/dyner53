@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Dyner53 by rread</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/rread/dyner53">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/rread/dyner53/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/rread/dyner53/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Dyner53</h1>
+          <p>Dynamic DNS with AWS Route 53 </p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/rread">rread</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a name="dynamic-route53-dns-updater" class="anchor" href="#dynamic-route53-dns-updater"><span class="octicon octicon-link"></span></a>Dynamic Route53 DNS Updater</h1>
+
+<p>This is is a quick and dirty script to manage a domain name on Route 53.
+The basic idea is to use the AWS Route 53 api to get the same functionality offered
+by Dynamic DNS.  This is still a work in progress, particularly the daemon option.</p>
+
+<p>These examples assume you have configured your environment to use the boto library to accesss AWS,
+and your account is currently hosting a domain on Route 53. </p>
+
+<p>Examples:</p>
+
+<pre><code>dyner53.py --domain example.com --subdomain myhost  check
+</code></pre>
+
+<p>This will lookup (using Route53) the current IP address for myhost.example.com, and compare it 
+with the publicly visible IP address of the current host, and report what it finds.  No changes are 
+made.</p>
+
+<pre><code>dyner53.py --domain example.com --subdomain myhost  update
+</code></pre>
+
+<p>This will perform the same check as above, and update if needed.  This will create subdomain if it 
+does not already existing.</p>
+
+<pre><code>dyner53.py --domain example.com --subdomain myhost  --ip 123.123.123.0 update
+</code></pre>
+
+<p>Updates the given subdomain (creating if necessary) to the given IP address.  Useful for testing or
+for simple domain management. </p>
+
+<pre><code>dyner53.py --domain example.com --subdomain myhost daemon
+</code></pre>
+
+<p>EXPERIMENTAL mode that will run as a daemon (in the background) that will check current public IP every 10 minutes and update if needed. </p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
