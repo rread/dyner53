@@ -10,22 +10,20 @@ __author__ = 'rread'
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-route53 = boto.connect_route53()
-
 
 def sys_is_osx_lion():
     import platform
 
     if platform.platform()[0:6] == 'Darwin':
         (major, minor, patch) = platform.mac_ver()[0].split(".")
-        if major == '10' and minor in ['7', '8']:
+        if major == '10' and minor in ['7', '8', '9']:
             return True
     return False
 
 
 def init_logging(daemon=False):
     """
-    Initialize logging. 
+    Send logs to syslog.
 
     :param daemon:
     """
@@ -37,16 +35,60 @@ def init_logging(daemon=False):
 
     if daemon:
         # TODO: workaround MacPorts bug #37990 
-        if sys_is_osx_lion():
-            syslog_address = '/var/run/syslog'
-        else:
-            # syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
-            syslog_address = '/dev/log'
-        syslog = logging.handlers.SysLogHandler(address=syslog_address,
-                                                facility='daemon')
+        # if sys_is_osx_lion():
+        #     syslog_address = '/var/run/syslog'
+        # else:
+        #     # syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+        #     syslog_address = '/dev/log'
+        # syslog = logging.handlers.SysLogHandler(address=syslog_address,
+        #                                         facility='daemon')
+        syslog = logging.handlers.SysLogHandler()
         syslog.setFormatter(formatter)
         syslog.setLevel(logging.INFO)
         logger.addHandler(syslog)
+
+class DynDomain:
+    def __init__(self, subdomain, domain):
+        self.domain = domain
+        self.dyn_domain = ".".join([subdomain, domain])
+        self.route53 = boto.connect_route53()
+        self.zone = self.route53.get_zone(domain)
+
+
+    def check(self, ip):
+        check_ip = ip or get_public_ip()
+        rec = self.zone.get_a(self.dyn_domain)
+        if rec is not None:
+            logger.info("Current IP is %s, %s = %s" % (check_ip, self.dyn_domain, rec.resource_records))
+            if check_ip in rec.resource_records:
+                logger.debug("Dynamic address is current.")
+                return True
+            else:
+                logger.debug('Need to update %s' % self.dyn_domain)
+                return False
+        else:
+            logger.debug("Domain %s does not exist." % self.dyn_domain)
+            return False
+
+    def update(self, ip):
+        my_ip = ip or get_public_ip()
+        zone = self.route53.get_zone(self.domain)
+        rec = zone.get_a(self.dyn_domain)
+        if rec is None:
+            zone.add_a(self.dyn_domain, my_ip, ttl=60)
+        elif my_ip not in rec.resource_records:
+            logger.warn('updating %s from %s -> %s' % (self.dyn_domain, rec.resource_records, my_ip))
+            zone.update_a(self.dyn_domain, my_ip, ttl=60)
+        else:
+            logger.debug("No update needed.")
+
+    def delete(self):
+        zone = self.route53.get_zone(self.domain)
+        rec = zone.get_a(self.dyn_domain)
+        if rec is None:
+            logger.debug("%s: Domain not found", self.dyn_domain)
+        else:
+            zone.delete_a(rec.name, rec.identifier)
 
 
 def get_args():
@@ -84,58 +126,25 @@ def get_dyn_domain(sub, domain):
 
 def do_check(args):
     init_logging()
-    dyn_domain = get_dyn_domain(args.subdomain, args.domain)
-    my_ip = args.ip or get_public_ip()
-    zone = route53.get_zone(args.domain)
-    rec = zone.get_a(dyn_domain)
-    if rec is not None:
-        logger.info("Current IP is %s, %s = %s" % (my_ip, dyn_domain, rec.resource_records))
-        if my_ip in rec.resource_records:
-            logger.debug("Dynamic address is current.")
-        else:
-            logger.debug('Need to update %s' % dyn_domain)
-    else:
-        logger.debug("Domain %s does not exist." % dyn_domain)
-
+    dd = DynDomain(args.subdomain, args.domain)
+    dd.check(args.ip)
 
 def do_update(args):
     init_logging()
-    update(args)
-
-
-def update(args):
-    dyn_domain = get_dyn_domain(args.subdomain, args.domain)
-    my_ip = args.ip or get_public_ip()
-    zone = route53.get_zone(args.domain)
-    rec = zone.get_a(dyn_domain)
-    if rec is None:
-        zone.add_a(dyn_domain, my_ip, ttl=60)
-    elif my_ip not in rec.resource_records:
-        logger.warn('updating %s from %s -> %s' % (dyn_domain, rec.resource_records, my_ip))
-        zone.update_a(dyn_domain, my_ip, ttl=60)
-    else:
-        logger.debug("No update needed.")
+    dd = DynDomain(args.subdomain, args.domain)
+    dd.update(args.ip)
 
 
 def do_delete(args):
     init_logging()
-    dyn_domain = get_dyn_domain(args.subdomain, args.domain)
-    zone = route53.get_zone(args.domain)
-    rec = zone.get_a(dyn_domain)
-    if rec is None:
-        logger.debug("%s: Domain not found", dyn_domain)
-    else:
-        zone.delete_a(rec.name, rec.identifier)
-
+    dd = DynDomain(args.subdomain, args.domain)
+    dd.delete()
 
 def do_daemon(args):
     """
 
     :param args:
     """
-    global route53
-    route53.close()
-
     with daemon.DaemonContext():
         init_logging(True)
         run_daemon(args)
@@ -144,21 +153,28 @@ def do_daemon(args):
 def run_daemon(args):
     logger.warn("Dynamic route53 updater started for: %s" %
                 get_dyn_domain(args.subdomain, args.domain))
+
+
     while True:
-        time.sleep(300)
+        logger.warn("Waking up for zone : %s", args.subdomain)
         try:
-            route53 = boto.connect_route53()
+            dd = DynDomain(args.subdomain, args.domain)
         except Exception, e:
             logging.warn('Unable to connect to route53: %s', e)
             continue
 
         try:
-            update(args)
+            dd.update(args.ip)
         except Exception, e:
-            logger.warn("Unable to upaate zone: %s", e)
+            logger.warn("Unable to update zone: %s", e)
+        time.sleep(300)
 
-        route53.close()
 
 def main():
     args = get_args()
     args.func(args)
+
+
+if __name__ == '__main__':
+  main()
+  
