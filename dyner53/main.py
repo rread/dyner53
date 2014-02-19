@@ -42,7 +42,6 @@ def init_logging(daemon=False):
             syslog_address = '/dev/log'
         syslog = logging.handlers.SysLogHandler(address=syslog_address,
                                                 facility='daemon')
-        syslog = logging.handlers.SysLogHandler()
         syslog.setFormatter(formatter)
         syslog.setLevel(logging.INFO)
         logger.addHandler(syslog)
