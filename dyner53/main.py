@@ -35,13 +35,13 @@ def init_logging(daemon=False):
 
     if daemon:
         # TODO: workaround MacPorts bug #37990 
-        # if sys_is_osx_lion():
-        #     syslog_address = '/var/run/syslog'
-        # else:
-        #     # syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
-        #     syslog_address = '/dev/log'
-        # syslog = logging.handlers.SysLogHandler(address=syslog_address,
-        #                                         facility='daemon')
+        if sys_is_osx_lion():
+            syslog_address = '/var/run/syslog'
+        else:
+            # syslog_address = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+            syslog_address = '/dev/log'
+        syslog = logging.handlers.SysLogHandler(address=syslog_address,
+                                                facility='daemon')
         syslog = logging.handlers.SysLogHandler()
         syslog.setFormatter(formatter)
         syslog.setLevel(logging.INFO)
@@ -156,7 +156,6 @@ def run_daemon(args):
 
 
     while True:
-        logger.warn("Waking up for zone : %s", args.subdomain)
         try:
             dd = DynDomain(args.subdomain, args.domain)
         except Exception, e:
@@ -177,4 +176,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-  
